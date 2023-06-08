@@ -133,8 +133,8 @@ static uint8_t *mdb_get_mute_state(struct bt_micp_db *vdb) //##
 {
 	if (!vdb->mics)
 		return NULL;
-
-	if (vdb->mics->mute_stat)
+ 
+ 	if (vdb->mics->mute_stat)
 		return &(vdb->mics->mute_stat);
 
 	return NULL;
@@ -322,7 +322,7 @@ static uint8_t mics_not_muted(struct bt_mics *mics, struct bt_micp *micp,
 		return 0;
 	}
 
-	mute_state = mdb_get_mute_state(mdb); //TO DO
+	mute_state = mdb_get_mute_state(mdb);
 	if (!mute_state) {
 		DBG(micp, "Error : Mute State not available");
 		return 0;
@@ -350,7 +350,7 @@ static uint8_t mics_muted(struct bt_mics *mics, struct bt_micp *micp,
 		return 0;
 	}
 
-	mute_state = mdb_get_mute_state(mdb);  //TO DO
+	mute_state = mdb_get_mute_state(mdb); 
 	if (!mute_state) {
 		DBG(micp, "Error Mute state not available");
 		return 0;
@@ -409,7 +409,7 @@ static void mics_mute_write(struct gatt_db_attribute *attrib,
 	uint8_t ret = BT_ATT_ERROR_REQUEST_NOT_SUPPORTED;
 	struct bt_micp_db *mdb;
 
-	DBG(micp, "MICS Mute Char write");
+	DBG(micp, "MICS Mute Char write: len: %ld: %ld", len, iov.iov_len);
 
 	if (offset) {
 		DBG(micp, "invalid offset: %d", offset);
@@ -425,6 +425,7 @@ static void mics_mute_write(struct gatt_db_attribute *attrib,
 	}
 
 	micp_op = iov_pull_mem(&iov, sizeof(*micp_op));
+	DBG(micp, "MICS after iov_pull_mem: len: %ld: %ld", len, iov.iov_len);
 	if ((*micp_op == MICS_DISABLED) || (*micp_op != MICS_NOT_MUTED && *micp_op != MICS_MUTED))  {
 	       DBG(micp, "Invalid operation - MICS DISABLED/RFU mics op:%d", micp_op);
        		ret = MICP_ERROR_VALUE_NOT_ALLOWED;
@@ -439,18 +440,19 @@ static void mics_mute_write(struct gatt_db_attribute *attrib,
 
         mute_state = mdb_get_mute_state(mdb);
        if (*mute_state == MICS_DISABLED) {
-       		DBG(micp, "state: MICS DISABLED , can not write value: %d", micp_op);
+       		DBG(micp, "state: MICS DISABLED , can not write value: %d", *micp_op);
  		ret = MICP_ERROR_MUTE_DISABLED;
 		goto respond;
 	}		
 
 	for(handler = micp_handlers; handler && handler->str; handler++) {
+		DBG(micp, "88888 ---->handler->op: %d micp_op: %d iov.iov_len: %ld", handler->op, *micp_op, iov.iov_len); //Mahesh
 		if (handler->op != *micp_op)
 			continue;
 
-		if (iov.iov_len < handler->size) {
-			DBG(micp, "invalid length %ld < %ld handler->size", len,
-					handler->size);
+		if (len < handler->size) {
+			DBG(micp, "invalid length %ld : %ld < %ld handler->size", len,
+					iov.iov_len, handler->size);
 			ret = BT_ATT_ERROR_OPCODE_NOT_SUPPORTED;
 			goto respond;
 		}
@@ -481,17 +483,19 @@ static struct bt_mics *mics_new(struct gatt_db *db)
 
 
 	mics = new0(struct bt_mics, 1);
+
+	mics->mute_stat = MICS_MUTED;
 	
 	/* Populate DB with MICS attributes */
 	bt_uuid16_create(&uuid, MICS_UUID);
-	mics->service = gatt_db_add_service(db, &uuid, true, 1);
+	mics->service = gatt_db_add_service(db, &uuid, true, 5);
 
 	bt_uuid16_create(&uuid, MUTE_CHRC_UUID);
         mics->ms = gatt_db_service_add_characteristic(mics->service, 
 					&uuid,
 					BT_ATT_PERM_READ | BT_ATT_PERM_WRITE,
 					BT_GATT_CHRC_PROP_READ | BT_GATT_CHRC_PROP_WRITE | BT_GATT_CHRC_PROP_NOTIFY,
-					mics_mute_read, mics_mute_write, //# 
+					mics_mute_read, mics_mute_write, 
 					mics);
 
 	mics->ms_ccc = gatt_db_service_add_ccc(mics->service, 
@@ -827,19 +831,3 @@ bool bt_micp_attach(struct bt_micp *micp, struct bt_gatt_client *client)
 
 	return true;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
