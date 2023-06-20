@@ -10,6 +10,7 @@
 #include <inttypes.h>
 
 #include "src/shared/io.h"
+#include "src/shared/gatt-client.h"
 
 
 struct bt_micp;
@@ -38,3 +39,5 @@ unsigned int bt_micp_register(bt_micp_func_t attached, bt_micp_func_t detached,
                                                         void *user_data);
 bool bt_micp_unregister(unsigned int id);
 struct bt_micp *bt_micp_new(struct gatt_db *ldb, struct gatt_db *rdb);
+
+void change_mics_mute_state(bool state);

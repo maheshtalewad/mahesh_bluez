@@ -23,16 +23,15 @@
 #include "src/shared/att.h"
 #include "src/shared/gatt-db.h"
 #include "src/shared/gatt-server.h"
-#include "src/shared/gatt-client.h"
 #include "src/shared/micp.h"
 
 #define DBG(_micp, fmt, arg...) \
 	micp_debug(_micp, "%s:%s() " fmt, __FILE__, __func__, ## arg)
 
 /* Application error codes */
-#define	MICP_ERROR_MUTE_DISABLED		0x80
+#define	MICP_ERROR_MUTE_DISABLED			0x80
 #define MICP_ERROR_VALUE_NOT_ALLOWED 		0x13
-#define BT_ATT_ERROR_OPCODE_NOT_SUPPORTED	0x81  //check imp
+#define BT_ATT_ERROR_OPCODE_NOT_SUPPORTED	0x81
 
 /* Mute char values */
 #define MICS_NOT_MUTED	0x00
@@ -72,6 +71,9 @@ struct bt_micp{
 	void *debug_data;
 	void *user_data;
 };
+
+struct bt_mics *pts_mics;
+struct bt_micp *pts_micp;
 
 static struct queue *micp_db;
 static struct queue *micp_cbs;
@@ -129,15 +131,13 @@ static struct bt_micp_db *micp_get_mdb(struct bt_micp *micp)
 	return NULL;
 }
 
-static uint8_t *mdb_get_mute_state(struct bt_micp_db *vdb) //##
+static uint8_t *mdb_get_mute_state(struct bt_micp_db *vdb)
 {
-	if (!vdb->mics)
+	if (!vdb->mics){
 		return NULL;
+	}
  
- 	if (vdb->mics->mute_stat)
-		return &(vdb->mics->mute_stat);
-
-	return NULL;
+	return &(vdb->mics->mute_stat);
 }
 
 static struct bt_mics *micp_get_mics(struct bt_micp *micp)
@@ -313,7 +313,7 @@ static uint8_t mics_not_muted(struct bt_mics *mics, struct bt_micp *micp,
 {
 	struct bt_micp_db *mdb;
 	uint8_t *mute_state;
-
+	
 	DBG(micp, "Mute state OP: Not Muted");
 
 	mdb = micp_get_mdb(micp);
@@ -351,10 +351,6 @@ static uint8_t mics_muted(struct bt_mics *mics, struct bt_micp *micp,
 	}
 
 	mute_state = mdb_get_mute_state(mdb); 
-	if (!mute_state) {
-		DBG(micp, "Error Mute state not available");
-		return 0;
-	}
 
 	*mute_state = MICS_MUTED;
 
@@ -386,11 +382,6 @@ struct mics_op_handler {
 		       sizeof(uint8_t), mics_muted),
 	{}
 };	       
-
-
-
-
-
 
 static void mics_mute_write(struct gatt_db_attribute *attrib,
 				unsigned int id, uint16_t offset,
@@ -425,7 +416,7 @@ static void mics_mute_write(struct gatt_db_attribute *attrib,
 	}
 
 	micp_op = iov_pull_mem(&iov, sizeof(*micp_op));
-	DBG(micp, "MICS after iov_pull_mem: len: %ld: %ld", len, iov.iov_len);
+	
 	if ((*micp_op == MICS_DISABLED) || (*micp_op != MICS_NOT_MUTED && *micp_op != MICS_MUTED))  {
 	       DBG(micp, "Invalid operation - MICS DISABLED/RFU mics op:%d", micp_op);
        		ret = MICP_ERROR_VALUE_NOT_ALLOWED;
@@ -439,14 +430,14 @@ static void mics_mute_write(struct gatt_db_attribute *attrib,
         }
 
         mute_state = mdb_get_mute_state(mdb);
-       if (*mute_state == MICS_DISABLED) {
+        if (*mute_state == MICS_DISABLED) {
        		DBG(micp, "state: MICS DISABLED , can not write value: %d", *micp_op);
  		ret = MICP_ERROR_MUTE_DISABLED;
 		goto respond;
-	}		
+	}
 
 	for(handler = micp_handlers; handler && handler->str; handler++) {
-		DBG(micp, "88888 ---->handler->op: %d micp_op: %d iov.iov_len: %ld", handler->op, *micp_op, iov.iov_len); //Mahesh
+		DBG(micp, "handler->op: %d micp_op: %d iov.iov_len: %ld", handler->op, *micp_op, iov.iov_len);
 		if (handler->op != *micp_op)
 			continue;
 
@@ -522,6 +513,7 @@ static struct bt_micp_db *micp_db_new(struct gatt_db *db)
         mdb->mics = mics_new(db);
 	mdb->mics->mdb = mdb;
 
+	pts_mics = mdb->mics;
 	queue_push_tail(micp_db, mdb);
 
 	return mdb;
@@ -602,7 +594,6 @@ bool bt_micp_unregister(unsigned int id)
 
 	return true;
 }
-
 
 struct bt_micp *bt_micp_new(struct gatt_db *ldb, struct gatt_db *rdb)
 {
@@ -774,6 +765,8 @@ static void foreach_mics_char(struct gatt_db_attribute *attr, void *user_data)
 	bt_uuid_t uuid, uuid_mute;
 	struct bt_mics *mics;
 
+	pts_micp = micp;
+
 	if (!gatt_db_attribute_get_char_data(attr, NULL, &value_handle, 
 						NULL, NULL, &uuid))
 		return;
@@ -827,7 +820,19 @@ bool bt_micp_attach(struct bt_micp *micp, struct bt_gatt_client *client)
 		return false;
 
 	bt_uuid16_create(&uuid, MICS_UUID);
-        gatt_db_foreach_service(micp->ldb->db, &uuid, foreach_mics_service, micp);	
+    gatt_db_foreach_service(micp->ldb->db, &uuid, foreach_mics_service, micp);	
 
 	return true;
 }
+
+void change_mics_mute_state(bool state)
+{
+	if (pts_micp == NULL)
+	{
+		printf("change_mics_mute_state() pts_micp is NULL\n");
+		return;
+	}
+	DBG(pts_micp, "change_mics_mute_state: %d", state);
+	state == true ? mics_muted(pts_mics, pts_micp, 0) : mics_not_muted(pts_mics, pts_micp, 0);
+}
+
