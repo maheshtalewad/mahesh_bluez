@@ -37,7 +37,6 @@
 #include "src/shared/att.h"
 #include "src/shared/queue.h"
 #include "src/shared/gatt-db.h"
-#include "src/shared/gatt-client.h"
 #include "src/shared/gatt-server.h"
 #include "src/shared/micp.h"
 
