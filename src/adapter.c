@@ -67,6 +67,7 @@
 #include "adv_monitor.h"
 #include "eir.h"
 #include "battery.h"
+#include "src/shared/micp.h" /* PTS Testing*/
 
 #define MODE_OFF		0x00
 #define MODE_CONNECTABLE	0x01
@@ -3333,6 +3334,19 @@ static void property_set_pairable(const GDBusPropertyTable *property,
 	property_set_mode(adapter, MGMT_SETTING_BONDABLE, iter, id);
 }
 
+static void property_set_mute_state(const GDBusPropertyTable *property,
+					DBusMessageIter *iter,
+					GDBusPendingPropertySet id, void *user_data)
+{
+	dbus_bool_t enable;
+	dbus_message_iter_get_basic(iter, &enable);
+	printf("----> SET property_set_mute_state: %d\n", enable);
+
+	g_dbus_pending_property_success(id);
+	change_mics_mute_state(enable);
+
+}
+ 
 static gboolean property_get_pairable_timeout(
 					const GDBusPropertyTable *property,
 					DBusMessageIter *iter, void *user_data)
@@ -3886,6 +3900,7 @@ static const GDBusPropertyTable adapter_properties[] = {
 	{ "DiscoverableTimeout", "u", property_get_discoverable_timeout,
 					property_set_discoverable_timeout },
 	{ "Pairable", "b", property_get_pairable, property_set_pairable },
+	{ "mics", "b", NULL, property_set_mute_state },
 	{ "PairableTimeout", "u", property_get_pairable_timeout,
 					property_set_pairable_timeout },
 	{ "Discovering", "b", property_get_discovering },
