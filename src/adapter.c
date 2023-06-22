@@ -3339,12 +3339,23 @@ static void property_set_mute_state(const GDBusPropertyTable *property,
 					GDBusPendingPropertySet id, void *user_data)
 {
 	dbus_bool_t enable;
+
 	dbus_message_iter_get_basic(iter, &enable);
-	printf("----> SET property_set_mute_state: %d\n", enable);
-
+	printf("SET property_set_mute_state: %d\n", enable);
+	mics_change_mute_state(enable);
 	g_dbus_pending_property_success(id);
-	change_mics_mute_state(enable);
+}
 
+static void property_mute_enable_disable(const GDBusPropertyTable *propert,
+					DBusMessageIter *iter,
+					GDBusPendingPropertySet id, void *user_data)
+{
+	dbus_bool_t enable;
+
+	dbus_message_iter_get_basic(iter, &enable);
+	printf("property_mute_enable_disable: %d\n", enable);
+	mics_enable_disable_mute(enable);
+	g_dbus_pending_property_success(id);
 }
  
 static gboolean property_get_pairable_timeout(
@@ -3901,6 +3912,7 @@ static const GDBusPropertyTable adapter_properties[] = {
 					property_set_discoverable_timeout },
 	{ "Pairable", "b", property_get_pairable, property_set_pairable },
 	{ "mics", "b", NULL, property_set_mute_state },
+	{ "mics_state", "b", NULL, property_mute_enable_disable },
 	{ "PairableTimeout", "u", property_get_pairable_timeout,
 					property_set_pairable_timeout },
 	{ "Discovering", "b", property_get_discovering },

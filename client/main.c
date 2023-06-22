@@ -1105,6 +1105,28 @@ static void cmd_set_mute_state(int argc, char *argv[])
 	return bt_shell_noninteractive_quit(EXIT_FAILURE);
 }
 
+static void cmd_enable_disable_mute_state(int argc, char *argv[])
+{
+	dbus_bool_t mute_state;
+	char *str;
+
+	if (!parse_argument(argc, argv, NULL, NULL, &mute_state, NULL))
+		return bt_shell_noninteractive_quit(EXIT_FAILURE);
+
+	if (check_default_ctrl() == FALSE)
+		return bt_shell_noninteractive_quit(EXIT_FAILURE);
+
+	str = g_strdup_printf("mics %s", mute_state == TRUE ? "on" : "off");
+
+	if (g_dbus_proxy_set_property_basic(default_ctrl->proxy, "mics_state",
+					DBUS_TYPE_BOOLEAN, &mute_state,
+					generic_callback, str, g_free) == TRUE)
+		return;
+	g_free(str);
+
+	return bt_shell_noninteractive_quit(EXIT_FAILURE);
+}
+
 static void cmd_discoverable(int argc, char *argv[])
 {
 	dbus_bool_t discoverable;
@@ -3151,6 +3173,10 @@ static const struct bt_shell_menu main_menu = {
 	{ "mics_mute",     "<on/off>", cmd_set_mute_state,
 					"Set Mics Mute state to on / off",
 							NULL },
+	{ "mics_state",     "<on/off>", cmd_enable_disable_mute_state,
+					"Set Mics Mute state to on[enable] / off[disable]",
+							NULL },
+
 	{ } },
 };
 

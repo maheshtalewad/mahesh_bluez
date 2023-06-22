@@ -40,4 +40,5 @@ unsigned int bt_micp_register(bt_micp_func_t attached, bt_micp_func_t detached,
 bool bt_micp_unregister(unsigned int id);
 struct bt_micp *bt_micp_new(struct gatt_db *ldb, struct gatt_db *rdb);
 
-void change_mics_mute_state(bool state);
+void mics_change_mute_state(bool state);
+void mics_enable_disable_mute(bool state);

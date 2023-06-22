@@ -825,14 +825,32 @@ bool bt_micp_attach(struct bt_micp *micp, struct bt_gatt_client *client)
 	return true;
 }
 
-void change_mics_mute_state(bool state)
+void mics_change_mute_state(bool state)
 {
 	if (pts_micp == NULL)
 	{
-		printf("change_mics_mute_state() pts_micp is NULL\n");
+		printf("mics_change_mute_state() pts_micp is NULL\n");
 		return;
 	}
-	DBG(pts_micp, "change_mics_mute_state: %d", state);
+	DBG(pts_micp, "mics_change_mute_state: %d", state);
 	state == true ? mics_muted(pts_mics, pts_micp, 0) : mics_not_muted(pts_mics, pts_micp, 0);
 }
 
+static uint8_t mics_mute_enable_disable(struct bt_mics *mics, uint8_t state)
+{
+	uint8_t *mute_state;
+
+	mute_state = mdb_get_mute_state(mics->mdb); 
+
+	*mute_state = state;
+	printf("mics_mute_enable_disable mute_state: %d state: %d ", *mute_state, state);
+
+	return 0;
+}
+
+void mics_enable_disable_mute(bool state)
+{
+	printf("mics_enable_disable_mute: %d", state);
+	state == true ? mics_mute_enable_disable(pts_mics, MICS_MUTED) : 
+				mics_mute_enable_disable(pts_mics, MICS_DISABLED);
+}
