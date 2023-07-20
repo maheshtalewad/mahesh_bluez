@@ -4,6 +4,7 @@
  *  BlueZ - Bluetooth protocol stack for Linux
  *
  *  Copyright (C) 2012-2014  Intel Corporation. All rights reserved.
+ *  Copyright 2023 NXP
  *
  *
  */
@@ -27,6 +28,8 @@
 #ifdef HAVE_SYS_RANDOM_H
 #include <sys/random.h>
 #endif
+
+#include <lib/bluetooth.h>
 
 /* define MAX_INPUT for musl */
 #ifndef MAX_INPUT
@@ -274,6 +277,123 @@ void *util_iov_push_mem(struct iovec *iov, size_t len, const void *data)
 	return p;
 }
 
+void *util_iov_push_le64(struct iovec *iov, uint64_t val)
+{
+	void *p;
+
+	p = util_iov_push(iov, sizeof(val));
+	if (!p)
+		return NULL;
+
+	put_le64(val, p);
+
+	return p;
+}
+
+void *util_iov_push_be64(struct iovec *iov, uint64_t val)
+{
+	void *p;
+
+	p = util_iov_push(iov, sizeof(val));
+	if (!p)
+		return NULL;
+
+	put_be64(val, p);
+
+	return p;
+}
+
+void *util_iov_push_le32(struct iovec *iov, uint32_t val)
+{
+	void *p;
+
+	p = util_iov_push(iov, sizeof(val));
+	if (!p)
+		return NULL;
+
+	put_le32(val, p);
+
+	return p;
+}
+
+void *util_iov_push_be32(struct iovec *iov, uint32_t val)
+{
+	void *p;
+
+	p = util_iov_push(iov, sizeof(val));
+	if (!p)
+		return NULL;
+
+	put_be32(val, p);
+
+	return p;
+}
+
+void *util_iov_push_le24(struct iovec *iov, uint32_t val)
+{
+	void *p;
+
+	p = util_iov_push(iov, sizeof(uint24_t));
+	if (!p)
+		return NULL;
+
+	put_le24(val, p);
+
+	return p;
+}
+
+void *util_iov_push_be24(struct iovec *iov, uint32_t val)
+{
+	void *p;
+
+	p = util_iov_push(iov, sizeof(uint24_t));
+	if (!p)
+		return NULL;
+
+	put_le24(val, p);
+
+	return p;
+}
+
+void *util_iov_push_le16(struct iovec *iov, uint16_t val)
+{
+	void *p;
+
+	p = util_iov_push(iov, sizeof(val));
+	if (!p)
+		return NULL;
+
+	put_le16(val, p);
+
+	return p;
+}
+
+void *util_iov_push_be16(struct iovec *iov, uint16_t val)
+{
+	void *p;
+
+	p = util_iov_push(iov, sizeof(val));
+	if (!p)
+		return NULL;
+
+	put_be16(val, p);
+
+	return p;
+}
+
+void *util_iov_push_u8(struct iovec *iov, uint8_t val)
+{
+	void *p;
+
+	p = util_iov_push(iov, sizeof(val));
+	if (!p)
+		return NULL;
+
+	put_u8(val, p);
+
+	return p;
+}
+
 void *util_iov_pull(struct iovec *iov, size_t len)
 {
 	if (!iov)
@@ -294,6 +414,114 @@ void *util_iov_pull_mem(struct iovec *iov, size_t len)
 
 	if (util_iov_pull(iov, len))
 		return data;
+
+	return NULL;
+}
+
+void *util_iov_pull_le64(struct iovec *iov, uint64_t *val)
+{
+	void *data = iov->iov_base;
+
+	if (util_iov_pull(iov, sizeof(*val))) {
+		*val = get_le64(data);
+		return data;
+	}
+
+	return NULL;
+}
+
+void *util_iov_pull_be64(struct iovec *iov, uint64_t *val)
+{
+	void *data = iov->iov_base;
+
+	if (util_iov_pull(iov, sizeof(*val))) {
+		*val = get_be64(data);
+		return data;
+	}
+
+	return NULL;
+}
+
+void *util_iov_pull_le32(struct iovec *iov, uint32_t *val)
+{
+	void *data = iov->iov_base;
+
+	if (util_iov_pull(iov, sizeof(*val))) {
+		*val = get_le32(data);
+		return data;
+	}
+
+	return NULL;
+}
+
+void *util_iov_pull_be32(struct iovec *iov, uint32_t *val)
+{
+	void *data = iov->iov_base;
+
+	if (util_iov_pull(iov, sizeof(*val))) {
+		*val = get_be32(data);
+		return data;
+	}
+
+	return NULL;
+}
+
+void *util_iov_pull_le24(struct iovec *iov, uint32_t *val)
+{
+	void *data = iov->iov_base;
+
+	if (util_iov_pull(iov, sizeof(uint24_t))) {
+		*val = get_le24(data);
+		return data;
+	}
+
+	return NULL;
+}
+
+void *util_iov_pull_be24(struct iovec *iov, uint32_t *val)
+{
+	void *data = iov->iov_base;
+
+	if (util_iov_pull(iov, sizeof(uint24_t))) {
+		*val = get_be24(data);
+		return data;
+	}
+
+	return NULL;
+}
+
+void *util_iov_pull_le16(struct iovec *iov, uint16_t *val)
+{
+	void *data = iov->iov_base;
+
+	if (util_iov_pull(iov, sizeof(*val))) {
+		*val = get_le16(data);
+		return data;
+	}
+
+	return NULL;
+}
+
+void *util_iov_pull_be16(struct iovec *iov, uint16_t *val)
+{
+	void *data = iov->iov_base;
+
+	if (util_iov_pull(iov, sizeof(*val))) {
+		*val = get_be16(data);
+		return data;
+	}
+
+	return NULL;
+}
+
+void *util_iov_pull_u8(struct iovec *iov, uint8_t *val)
+{
+	void *data = iov->iov_base;
+
+	if (util_iov_pull(iov, sizeof(*val))) {
+		*val = get_u8(data);
+		return data;
+	}
 
 	return NULL;
 }
@@ -1476,4 +1704,66 @@ int strsuffix(const char *str, const char *suffix)
 		return -1;
 
 	return strncmp(str + len - suffix_len, suffix, suffix_len);
+}
+
+char *strstrip(char *str)
+{
+	size_t size;
+	char *end;
+
+	if (!str)
+		return NULL;
+
+	size = strlen(str);
+	if (!size)
+		return str;
+
+	end = str + size - 1;
+	while (end >= str && isspace(*end))
+		end--;
+	*(end + 1) = '\0';
+
+	while (*str && isspace(*str))
+		str++;
+
+	return str;
+}
+
+bool strisutf8(const char *str, size_t len)
+{
+	size_t i = 0;
+
+	while (i < len) {
+		unsigned char c = str[i];
+		size_t size = 0;
+
+		/* Check the first byte to determine the number of bytes in the
+		 * UTF-8 character.
+		 */
+		if ((c & 0x80) == 0x00)
+			size = 1;
+		else if ((c & 0xE0) == 0xC0)
+			size = 2;
+		else if ((c & 0xF0) == 0xE0)
+			size = 3;
+		else if ((c & 0xF8) == 0xF0)
+			size = 4;
+		else
+			/* Invalid UTF-8 sequence */
+			return false;
+
+		/* Check the following bytes to ensure they have the correct
+		 * format.
+		 */
+		for (size_t j = 1; j < size; ++j) {
+			if (i + j > len || (str[i + j] & 0xC0) != 0x80)
+				/* Invalid UTF-8 sequence */
+				return false;
+		}
+
+		/* Move to the next character */
+		i += size;
+	}
+
+	return true;
 }

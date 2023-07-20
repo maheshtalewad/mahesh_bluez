@@ -939,7 +939,9 @@ static int refresh_legacy_adv(struct btd_adv_client *client,
 	cp->adv_data_len = adv_data_len;
 	cp->scan_rsp_len = scan_rsp_len;
 	memcpy(cp->data, adv_data, adv_data_len);
-	memcpy(cp->data + adv_data_len, scan_rsp, scan_rsp_len);
+
+	if (scan_rsp)
+		memcpy(cp->data + adv_data_len, scan_rsp, scan_rsp_len);
 
 	free(adv_data);
 	free(scan_rsp);
@@ -1556,9 +1558,13 @@ static struct btd_adv_client *client_create(struct btd_adv_manager *manager,
 	if (!client->data)
 		goto fail;
 
+	bt_ad_set_max_len(client->data, manager->max_adv_len);
+
 	client->scan = bt_ad_new();
 	if (!client->scan)
 		goto fail;
+
+	bt_ad_set_max_len(client->scan, manager->max_scan_rsp_len);
 
 	client->manager = manager;
 	client->appearance = UINT16_MAX;

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 AC_PREREQ(2.60)
-AC_INIT(bluez, 5.66)
+AC_INIT(bluez, 5.68)
 
 AM_INIT_AUTOMAKE([foreign subdir-objects color-tests silent-rules
 					tar-pax no-dist-gzip dist-xz])
@@ -32,8 +32,8 @@ AC_PROG_MKDIR_P
 m4_define([_LT_AC_TAGCONFIG], [])
 m4_ifdef([AC_LIBTOOL_TAGS], [AC_LIBTOOL_TAGS([])])
 
-AC_DISABLE_STATIC
-AC_PROG_LIBTOOL
+LT_PREREQ(2.2)
+LT_INIT([disable-static])
 
 if (test "$USE_MAINTAINER_MODE" = "yes"); then
 	AC_CHECK_PROG(enable_coverage, [lcov], [yes], [no])
@@ -199,6 +199,10 @@ AC_ARG_ENABLE(bap, AS_HELP_STRING([--disable-bap],
 		[disable BAP profile]), [enable_bap=${enableval}])
 AM_CONDITIONAL(BAP, test "${enable_bap}" != "no")
 
+AC_ARG_ENABLE(bass, AS_HELP_STRING([--disable-bass],
+		[disable BASS service]), [enable_bass=${enableval}])
+AM_CONDITIONAL(BASS, test "${enable_bass}" != "no")
+
 AC_ARG_ENABLE(mcp, AS_HELP_STRING([--disable-mcp],
         [disable MCP profile]), [enable_mcp=${enableval}])
 AM_CONDITIONAL(MCP, test "${enable_mcp}" != "no")
@@ -298,9 +302,10 @@ if (test "${enable_external_ell}" = "yes"); then
 	AC_SUBST(ELL_LIBS)
 fi
 if (test "${enable_external_ell}" != "yes"); then
-	AC_CHECK_FILE(${srcdir}/ell/ell.h, dummy=yes,
-			AC_CHECK_FILE(${srcdir}/../ell/ell/ell.h, dummy=yes,
-				AC_MSG_ERROR(ELL source is required or use --enable-external-ell)))
+	if (test ! -f ${srcdir}/ell/ell.h) &&
+			(test ! -f ${srcdir}/../ell/ell/ell.h); then
+				AC_MSG_ERROR(ELL source is required or use --enable-external-ell)
+	fi
 fi
 AM_CONDITIONAL(EXTERNAL_ELL, test "${enable_external_ell}" = "yes" ||
 				(test "${enable_btpclient}" != "yes" &&

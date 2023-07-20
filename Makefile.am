@@ -82,7 +82,7 @@ pkginclude_HEADERS += $(lib_headers)
 lib_LTLIBRARIES += lib/libbluetooth.la
 
 lib_libbluetooth_la_SOURCES = $(lib_headers) $(lib_sources)
-lib_libbluetooth_la_LDFLAGS = $(AM_LDFLAGS) -version-info 22:8:19
+lib_libbluetooth_la_LDFLAGS = $(AM_LDFLAGS) -version-info 22:9:19
 lib_libbluetooth_la_DEPENDENCIES = $(local_headers)
 endif
 
@@ -235,6 +235,7 @@ shared_sources = src/shared/io.h src/shared/timeout.h \
 			src/shared/vcp.c src/shared/vcp.h \
 			src/shared/micp.c src/shared/micp.h \
 			src/shared/csip.c src/shared/csip.h \
+			src/shared/bass.h src/shared/bass.c \
 			src/shared/lc3.h src/shared/tty.h
 
 if READLINE
@@ -576,6 +577,12 @@ unit_tests += unit/test-bap
 
 unit_test_bap_SOURCES = unit/test-bap.c
 unit_test_bap_LDADD = src/libshared-glib.la \
+				lib/libbluetooth-internal.la $(GLIB_LIBS)
+
+unit_tests += unit/test-bass
+
+unit_test_bass_SOURCES = unit/test-bass.c $(btio_sources)
+unit_test_bass_LDADD = src/libshared-glib.la \
 				lib/libbluetooth-internal.la $(GLIB_LIBS)
 
 if MIDI
