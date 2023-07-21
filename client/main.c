@@ -412,6 +412,7 @@ static struct adapter *adapter_new(GDBusProxy *proxy)
 
 	if (!default_ctrl)
 		default_ctrl = adapter;
+	mics_set_prox((void *)adapter);
 
 	return adapter;
 }
@@ -891,7 +892,8 @@ static void cmd_show(int argc, char *argv[])
 			return bt_shell_noninteractive_quit(EXIT_FAILURE);
 		}
 	}
-
+	
+	mics_set_prox((void *)adapter); 
 	if (!g_dbus_proxy_get_property(adapter->proxy, "Address", &iter))
 		return bt_shell_noninteractive_quit(EXIT_FAILURE);
 
@@ -950,7 +952,7 @@ static void cmd_select(int argc, char *argv[])
 		bt_shell_printf("Controller %s not available\n", argv[1]);
 		return bt_shell_noninteractive_quit(EXIT_FAILURE);
 	}
-
+	mics_set_prox((void *)adapter);
 	if (default_ctrl && default_ctrl->proxy == adapter->proxy)
 		return bt_shell_noninteractive_quit(EXIT_SUCCESS);
 
@@ -1084,49 +1086,6 @@ static void cmd_pairable(int argc, char *argv[])
 	return bt_shell_noninteractive_quit(EXIT_FAILURE);
 }
 
-static void cmd_set_mute_state(int argc, char *argv[])
-{
-	dbus_bool_t mute_state;
-	char *str;
-
-	if (!parse_argument(argc, argv, NULL, NULL, &mute_state, NULL))
-		return bt_shell_noninteractive_quit(EXIT_FAILURE);
-
-	if (check_default_ctrl() == FALSE)
-		return bt_shell_noninteractive_quit(EXIT_FAILURE);
-
-	str = g_strdup_printf("mics %s", mute_state == TRUE ? "on" : "off");
-
-	if (g_dbus_proxy_set_property_basic(default_ctrl->proxy, "mics",
-					DBUS_TYPE_BOOLEAN, &mute_state,
-					generic_callback, str, g_free) == TRUE)
-		return;
-	g_free(str);
-
-	return bt_shell_noninteractive_quit(EXIT_FAILURE);
-}
-
-static void cmd_enable_disable_mute_state(int argc, char *argv[])
-{
-	dbus_bool_t mute_state;
-	char *str;
-
-	if (!parse_argument(argc, argv, NULL, NULL, &mute_state, NULL))
-		return bt_shell_noninteractive_quit(EXIT_FAILURE);
-
-	if (check_default_ctrl() == FALSE)
-		return bt_shell_noninteractive_quit(EXIT_FAILURE);
-
-	str = g_strdup_printf("mics %s", mute_state == TRUE ? "on" : "off");
-
-	if (g_dbus_proxy_set_property_basic(default_ctrl->proxy, "mics_state",
-					DBUS_TYPE_BOOLEAN, &mute_state,
-					generic_callback, str, g_free) == TRUE)
-		return;
-	g_free(str);
-
-	return bt_shell_noninteractive_quit(EXIT_FAILURE);
-}
 
 static void cmd_discoverable(int argc, char *argv[])
 {
@@ -3171,13 +3130,6 @@ static const struct bt_shell_menu main_menu = {
 							dev_generator },
 	{ "disconnect",   "[dev]",    cmd_disconn, "Disconnect device",
 							dev_generator },
-	{ "mics_mute",     "<on/off>", cmd_set_mute_state,
-					"Set Mics Mute state to on / off",
-							NULL },
-	{ "mics_state",     "<on/off>", cmd_enable_disable_mute_state,
-					"Set Mics Mute state to on[enable] / off[disable]",
-							NULL },
-
 	{ } },
 };
 

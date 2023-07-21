@@ -56,6 +56,7 @@ struct micp_data {
 	struct btd_device *device;
 	struct btd_service *service;
 	struct bt_micp *micp;
+	unsigned int ready_id;
 };
 
 static struct queue *sessions;
@@ -67,7 +68,6 @@ static void micp_debug(const char *str, void *user_data)
 
 static int micp_disconnect(struct btd_service *service)
 {
-	DBG("");
 	return 0;
 }
 
@@ -116,6 +116,7 @@ static void micp_data_free(struct micp_data *data)
 		bt_micp_set_user_data(data->micp, NULL);
 	}
 
+	bt_micp_ready_unregister(data->micp, data->ready_id);
 	bt_micp_unref(data->micp);
 	free(data);
 }
@@ -148,6 +149,11 @@ static void micp_detached(struct bt_micp *micp, void *user_data)
 	}
 
 	micp_data_remove(data);
+}
+
+static void micp_ready(struct bt_micp *micp, void *user_data)
+{
+	DBG("$$$$$$$ micp %p\n", micp);
 }
 
 static void micp_attached(struct bt_micp *micp, void *user_data)
@@ -195,12 +201,12 @@ static int micp_probe(struct btd_service *service)
 		return -EINVAL;
 	}
 
-	data = micp_data_new(device); 
+	data = micp_data_new(device);
 	data->service = service;
 
-	data->micp = bt_micp_new(btd_gatt_database_get_db(database), 
+	data->micp = bt_micp_new(btd_gatt_database_get_db(database),
 					btd_device_get_gatt_db(device));
-	
+
 	if(!data->micp) {
 		error("unable to create MICP instance");
 		free(data);
@@ -208,7 +214,10 @@ static int micp_probe(struct btd_service *service)
 	}
 
 	micp_data_add(data);
-	
+
+	data->ready_id = bt_micp_ready_register(data->micp, micp_ready, service,
+								NULL);
+
 	bt_micp_set_user_data(data->micp, service);
 
 	return 0;
@@ -274,7 +283,7 @@ static int micp_server_probe(struct btd_profile *p,
 	struct btd_gatt_database *database = btd_adapter_get_database(adapter);
 
 	DBG("MICP path %s", adapter_get_path(adapter));
-	
+
 	bt_micp_add_db(btd_gatt_database_get_db(database));
 
 	return 0;
@@ -291,11 +300,11 @@ static struct btd_profile micp_profile = {
 	.priority 	= BTD_PROFILE_PRIORITY_MEDIUM,
 	.remote_uuid 	= MICS_UUID_STR,
 
-        .device_probe 	= micp_probe,
+    .device_probe 	= micp_probe,
 	.device_remove 	= micp_remove,
 
 	.accept 	= micp_accept,
-	.connect	= micp_connect, 
+	.connect	= micp_connect,
 	.disconnect 	= micp_disconnect,
 
 	.adapter_probe 	= micp_server_probe,

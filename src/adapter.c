@@ -3357,7 +3357,57 @@ static void property_mute_enable_disable(const GDBusPropertyTable *propert,
 	mics_enable_disable_mute(enable);
 	g_dbus_pending_property_success(id);
 }
- 
+
+static void property_micp_discover_mute(const GDBusPropertyTable *propert,
+					DBusMessageIter *iter,
+					GDBusPendingPropertySet id, void *user_data)
+{
+	dbus_bool_t enable;
+
+	dbus_message_iter_get_basic(iter, &enable);
+	printf("property_micp_discover_mute: %d\n", enable);
+	micp_discover_mute_char();
+	g_dbus_pending_property_success(id);
+}
+
+static void property_micp_read_mute(const GDBusPropertyTable *propert,
+					DBusMessageIter *iter,
+					GDBusPendingPropertySet id, void *user_data)
+{
+	uint16_t handle;
+
+	if (dbus_message_iter_get_arg_type(iter) != DBUS_TYPE_UINT16) {
+		g_dbus_pending_property_error(id,
+				ERROR_INTERFACE ".InvalidArguments",
+				"Expected UINT16");
+		return;
+	}
+	dbus_message_iter_get_basic(iter, &handle);
+	printf("property_micp_read_mute: %x\n", handle);
+
+	mics_mute_char_read(handle);
+	g_dbus_pending_property_success(id);
+}
+
+static void property_micp_write_mute(const GDBusPropertyTable *propert,
+					DBusMessageIter *iter,
+					GDBusPendingPropertySet id, void *user_data)
+{
+	uint16_t handle;
+
+	if (dbus_message_iter_get_arg_type(iter) != DBUS_TYPE_UINT16) {
+		g_dbus_pending_property_error(id,
+				ERROR_INTERFACE ".InvalidArguments",
+				"Expected UINT16");
+		return;
+	}
+	dbus_message_iter_get_basic(iter, &handle);
+	printf("property_micp_write_mute: %x\n", handle);
+
+	micp_char_write_value(handle);
+	g_dbus_pending_property_success(id);
+}
+
 static gboolean property_get_pairable_timeout(
 					const GDBusPropertyTable *property,
 					DBusMessageIter *iter, void *user_data)
@@ -3913,6 +3963,9 @@ static const GDBusPropertyTable adapter_properties[] = {
 	{ "Pairable", "b", property_get_pairable, property_set_pairable },
 	{ "mics", "b", NULL, property_set_mute_state },
 	{ "mics_state", "b", NULL, property_mute_enable_disable },
+	{ "micp_disc", "b", NULL, property_micp_discover_mute },
+	{ "micp_read_char", "q", NULL, property_micp_read_mute },
+	{ "micp_write_char", "q", NULL, property_micp_write_mute },
 	{ "PairableTimeout", "u", property_get_pairable_timeout,
 					property_set_pairable_timeout },
 	{ "Discovering", "b", property_get_discovering },
