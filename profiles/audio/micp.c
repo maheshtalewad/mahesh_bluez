@@ -76,6 +76,7 @@ static struct micp_data *micp_data_new(struct btd_device *device)
 	struct micp_data *data;
 
 	data = new0(struct micp_data, 1);
+	g_assert(data);
 	data->device = device;
 
 	return data;
@@ -153,7 +154,7 @@ static void micp_detached(struct bt_micp *micp, void *user_data)
 
 static void micp_ready(struct bt_micp *micp, void *user_data)
 {
-	DBG("$$$$$$$ micp %p\n", micp);
+	DBG("micp %p\n", micp);
 }
 
 static void micp_attached(struct bt_micp *micp, void *user_data)
@@ -179,6 +180,7 @@ static void micp_attached(struct bt_micp *micp, void *user_data)
 	}
 
 	data = micp_data_new(device);
+	g_assert(data);
 	data->micp = micp;
 
 	micp_data_add(data);
@@ -300,7 +302,7 @@ static struct btd_profile micp_profile = {
 	.priority 	= BTD_PROFILE_PRIORITY_MEDIUM,
 	.remote_uuid 	= MICS_UUID_STR,
 
-    .device_probe 	= micp_probe,
+    	.device_probe 	= micp_probe,
 	.device_remove 	= micp_remove,
 
 	.accept 	= micp_accept,

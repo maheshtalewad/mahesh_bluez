@@ -600,7 +600,7 @@ struct mics_adapter{
 	GDBusProxy *proxy;
 };
 static struct mics_adapter *mics_default_ctrl;
-void mics_set_prox(void *proxy)
+void mics_set_proxy(void *proxy)
 {
 	mics_default_ctrl = (struct mics_adapter *)proxy;
 	if (mics_default_ctrl == NULL){

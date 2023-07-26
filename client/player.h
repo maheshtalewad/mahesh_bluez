@@ -10,4 +10,4 @@
 
 void player_add_submenu(void);
 void player_remove_submenu(void);
-void mics_set_prox(void *proxy);
+void mics_set_proxy(void *proxy);

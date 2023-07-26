@@ -412,7 +412,7 @@ static struct adapter *adapter_new(GDBusProxy *proxy)
 
 	if (!default_ctrl)
 		default_ctrl = adapter;
-	mics_set_prox((void *)adapter);
+	mics_set_proxy((void *)adapter);
 
 	return adapter;
 }
@@ -893,7 +893,7 @@ static void cmd_show(int argc, char *argv[])
 		}
 	}
 	
-	mics_set_prox((void *)adapter); 
+	mics_set_proxy((void *)adapter); 
 	if (!g_dbus_proxy_get_property(adapter->proxy, "Address", &iter))
 		return bt_shell_noninteractive_quit(EXIT_FAILURE);
 
@@ -952,7 +952,7 @@ static void cmd_select(int argc, char *argv[])
 		bt_shell_printf("Controller %s not available\n", argv[1]);
 		return bt_shell_noninteractive_quit(EXIT_FAILURE);
 	}
-	mics_set_prox((void *)adapter);
+	mics_set_proxy((void *)adapter);
 	if (default_ctrl && default_ctrl->proxy == adapter->proxy)
 		return bt_shell_noninteractive_quit(EXIT_SUCCESS);
 
