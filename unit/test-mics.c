@@ -45,6 +45,7 @@ struct db_attribute_micp_test_data {
 	bool found;
 };
 
+#define MICP_GATT_CLIENT_MTU	64
 #define iov_data(args...) ((const struct iovec[]) { args })
 
 #define define_test(name, function, _cfg, args...)		\
@@ -266,7 +267,7 @@ static void test_setup(const void *user_data)
 	g_assert(db);
 
 
-	data->client = bt_gatt_client_new(db, att, 64, 0);
+	data->client = bt_gatt_client_new(db, att, MICP_GATT_CLIENT_MTU, 0);
 	g_assert(data->client);
 
 	bt_gatt_client_set_debug(data->client, print_debug, "bt_gatt_client:",
@@ -285,9 +286,9 @@ int main(int argc, char *argv[])
 
     tester_init(&argc, &argv);
 
-	define_test("MICP/CL/CGGIT/SER/BV-01-C", test_client, NULL, MICS_MUTE_READ);
-	define_test("MICP/CL/CGGIT/CHA/BV-01-C", test_client, NULL, MICP_CL_CGGIT_SER_BV_01_C);
-	define_test("MICP/CL/SPE/BI-01-C", test_client, NULL, MICP_CL_SPE_BI_01_C);
+    define_test("MICP/CL/CGGIT/SER/BV-01-C", test_client, NULL, MICS_MUTE_READ);
+    define_test("MICP/CL/CGGIT/CHA/BV-01-C", test_client, NULL, MICP_CL_CGGIT_SER_BV_01_C);
+    define_test("MICP/CL/SPE/BI-01-C", test_client, NULL, MICP_CL_SPE_BI_01_C);
 
     return tester_run();
 }
