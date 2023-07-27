@@ -2608,7 +2608,7 @@ struct bt_hci_cmd_periodic_sync_trans {
 struct bt_hci_cmd_pa_set_info_trans {
 	uint16_t handle;
 	uint16_t service_data;
-	uint16_t adv_handle;
+	uint8_t adv_handle;
 } __attribute__ ((packed));
 
 #define BT_HCI_CMD_PA_SYNC_TRANS_PARAMS		0x205c
@@ -2777,20 +2777,19 @@ struct bt_hci_bis_test {
 	uint16_t iso_interval;
 	uint8_t  nse;
 	uint16_t sdu;
-	uint8_t  pdu;
+	uint16_t  pdu;
 	uint8_t  phy;
 	uint8_t  packing;
 	uint8_t  framing;
 	uint8_t  bn;
 	uint8_t  irc;
 	uint8_t  pto;
-	uint8_t  adv_handle;
 	uint8_t  encryption;
 	uint8_t  bcode[16];
 } __attribute__ ((packed));
 
 struct bt_hci_cmd_le_create_big_test {
-	uint8_t  big_id;
+	uint8_t  big_handle;
 	uint8_t  adv_handle;
 	uint8_t  num_bis;
 	struct bt_hci_bis_test bis[0];
@@ -3677,7 +3676,7 @@ struct bt_hci_evt_le_big_sync_estabilished {
 
 #define BT_HCI_EVT_LE_BIG_SYNC_LOST		0x1e
 struct bt_hci_evt_le_big_sync_lost {
-	uint8_t  big_id;
+	uint8_t  big_handle;
 	uint8_t  reason;
 } __attribute__ ((packed));
 
