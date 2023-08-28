@@ -2006,7 +2006,7 @@ static void device_set_auto_connect(struct btd_device *device, gboolean enable)
 {
 	char addr[18];
 
-	if (!device || !device->le)
+	if (!device || !device->le || device_address_is_private(device))
 		return;
 
 	ba2str(&device->bdaddr, addr);
@@ -2156,7 +2156,7 @@ done:
 void device_add_eir_uuids(struct btd_device *dev, GSList *uuids)
 {
 	GSList *l;
-	bool added = false;
+	GSList *added = NULL;
 
 	if (dev->bredr_state.svc_resolved || dev->le_state.svc_resolved)
 		return;
@@ -2165,13 +2165,11 @@ void device_add_eir_uuids(struct btd_device *dev, GSList *uuids)
 		const char *str = l->data;
 		if (g_slist_find_custom(dev->eir_uuids, str, bt_uuid_strcmp))
 			continue;
-		added = true;
+		added = g_slist_append(added, (void *)str);
 		dev->eir_uuids = g_slist_append(dev->eir_uuids, g_strdup(str));
 	}
 
-	if (added)
-		g_dbus_emit_property_changed(dbus_conn, dev->path,
-						DEVICE_INTERFACE, "UUIDs");
+	device_probe_profiles(dev, added);
 }
 
 static void add_manufacturer_data(void *data, void *user_data)
@@ -2201,12 +2199,17 @@ static void add_service_data(void *data, void *user_data)
 	struct eir_sd *sd = data;
 	struct btd_device *dev = user_data;
 	bt_uuid_t uuid;
+	GSList *l;
 
 	if (bt_string_to_uuid(&uuid, sd->uuid) < 0)
 		return;
 
 	if (!bt_ad_add_service_data(dev->ad, &uuid, sd->data, sd->data_len))
 		return;
+
+	l = g_slist_append(NULL, sd->uuid);
+	device_add_eir_uuids(dev, l);
+	g_slist_free(l);
 
 	g_dbus_emit_property_changed(dbus_conn, dev->path,
 					DEVICE_INTERFACE, "ServiceData");
@@ -3927,11 +3930,13 @@ static bool device_match_profile(struct btd_device *device,
 					struct btd_profile *profile,
 					GSList *uuids)
 {
+	GSList *l;
+
 	if (profile->remote_uuid == NULL)
 		return false;
 
-	if (g_slist_find_custom(uuids, profile->remote_uuid,
-							bt_uuid_strcmp) == NULL)
+	l = g_slist_find_custom(uuids, profile->remote_uuid, bt_uuid_strcmp);
+	if (!l)
 		return false;
 
 	return true;
@@ -4822,8 +4827,15 @@ static struct btd_service *probe_service(struct btd_device *device,
 	/* Only set auto connect if profile has set the flag and can really
 	 * accept connections.
 	 */
-	if (profile->auto_connect && profile->accept)
-		device_set_auto_connect(device, TRUE);
+	if (profile->auto_connect && profile->accept) {
+		/* If temporary mark auto_connect as disabled so when the
+		 * device is connected it attempts to enable it.
+		 */
+		if (device->temporary)
+			device->disable_auto_connect = TRUE;
+		else
+			device_set_auto_connect(device, TRUE);
+	}
 
 	return service;
 }
@@ -4884,14 +4896,15 @@ void device_probe_profiles(struct btd_device *device, GSList *uuids)
 	struct probe_data d = { device, uuids };
 	char addr[18];
 
+	if (!uuids)
+		return;
+
 	ba2str(&device->bdaddr, addr);
 
 	if (device->blocked) {
 		DBG("Skipping profiles for blocked device %s", addr);
 		goto add_uuids;
 	}
-
-	DBG("Probing profiles for device %s", addr);
 
 	btd_profile_foreach(dev_probe, &d);
 
@@ -5740,6 +5753,10 @@ int device_connect_le(struct btd_device *dev)
 
 	/* Keep this, so we can cancel the connection */
 	dev->att_io = io;
+
+	/* Restart temporary timer to give it time to connect/pair, etc. */
+	if (dev->temporary)
+		set_temporary_timer(dev, btd_opts.tmpto);
 
 	return 0;
 }
@@ -6920,9 +6937,6 @@ void btd_device_add_uuid(struct btd_device *device, const char *uuid)
 	GSList *uuid_list;
 	char *new_uuid;
 
-	if (g_slist_find_custom(device->uuids, uuid, bt_uuid_strcmp))
-		return;
-
 	new_uuid = g_strdup(uuid);
 	uuid_list = g_slist_append(NULL, new_uuid);
 
@@ -6930,11 +6944,6 @@ void btd_device_add_uuid(struct btd_device *device, const char *uuid)
 
 	g_free(new_uuid);
 	g_slist_free(uuid_list);
-
-	store_device_info(device);
-
-	g_dbus_emit_property_changed(dbus_conn, device->path,
-						DEVICE_INTERFACE, "UUIDs");
 }
 
 static sdp_list_t *read_device_records(struct btd_device *device)

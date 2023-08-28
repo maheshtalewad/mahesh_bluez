@@ -111,7 +111,7 @@ static const uint8_t base_lc3_16_2_1[] = {
 	0x01, /* Number of Subgroups */
 	0x01, /* Number of BIS */
 	0x06, 0x00, 0x00, 0x00, 0x00, /* Code ID = LC3 (0x06) */
-	0x11, /* Codec Specific Configuration */
+	0x10, /* Codec Specific Configuration */
 	0x02, 0x01, 0x03, /* 16 KHZ */
 	0x02, 0x02, 0x01, /* 10 ms */
 	0x05, 0x03, 0x01, 0x00, 0x00, 0x00,  /* Front Left */
@@ -1342,6 +1342,17 @@ static const struct capabilities {
 	 * Channel count: 3
 	 * Frame length: 30-240
 	 */
+	CODEC_CAPABILITIES(BCAA_SERVICE_UUID, LC3_ID,
+					LC3_DATA(LC3_FREQ_ANY, LC3_DURATION_ANY,
+						3u, 30, 240)),
+
+	/* Broadcast LC3 Sink:
+	 *
+	 * Frequencies: 8Khz 11Khz 16Khz 22Khz 24Khz 32Khz 44.1Khz 48Khz
+	 * Duration: 7.5 ms 10 ms
+	 * Channel count: 3
+	 * Frame length: 30-240
+	 */
 	CODEC_CAPABILITIES(BAA_SERVICE_UUID, LC3_ID,
 					LC3_DATA(LC3_FREQ_ANY, LC3_DURATION_ANY,
 						3u, 30, 240)),
@@ -1626,6 +1637,7 @@ static struct preset {
 	PRESET(A2DP_SINK_UUID, A2DP_CODEC_SBC, sbc_presets, 6),
 	PRESET(PAC_SINK_UUID, LC3_ID, lc3_presets, 3),
 	PRESET(PAC_SOURCE_UUID, LC3_ID, lc3_presets, 3),
+	PRESET(BCAA_SERVICE_UUID,  LC3_ID, lc3_presets, 3),
 	PRESET(BAA_SERVICE_UUID,  LC3_ID, lc3_presets, 3),
 };
 
@@ -2617,7 +2629,8 @@ static void endpoint_auto_accept(const char *input, void *user_data)
 {
 	struct endpoint *ep = user_data;
 
-	if (!strcmp(ep->uuid, BAA_SERVICE_UUID)) {
+	if (!strcmp(ep->uuid, BCAA_SERVICE_UUID) ||
+		!strcmp(ep->uuid, BAA_SERVICE_UUID)) {
 		ep->broadcast = true;
 	} else {
 		ep->broadcast = false;
@@ -2890,13 +2903,20 @@ static void endpoint_config(const char *input, void *user_data)
 	endpoint_set_config(cfg);
 }
 
+static struct endpoint *endpoint_new(const struct capabilities *cap);
+
 static void cmd_config_endpoint(int argc, char *argv[])
 {
 	struct endpoint_config *cfg;
 	const struct codec_preset *preset;
+	const struct capabilities *cap;
+	char *uuid;
+	uint8_t codec_id;
+	bool broadcast = false;
 
 	cfg = new0(struct endpoint_config, 1);
 
+	/* Search for the remote endpoint name on DBUS */
 	cfg->proxy = g_dbus_proxy_lookup(endpoints, NULL, argv[1],
 						BLUEZ_MEDIA_ENDPOINT_INTERFACE);
 	if (!cfg->proxy) {
@@ -2904,16 +2924,36 @@ static void cmd_config_endpoint(int argc, char *argv[])
 		goto fail;
 	}
 
+	/* Search for the local endpoint */
 	cfg->ep = endpoint_find(argv[2]);
 	if (!cfg->ep) {
-		bt_shell_printf("Local Endpoint %s not found\n", argv[2]);
-		goto fail;
+
+		/* When the local endpoint was not found either we received
+		 * UUID, or the provided local endpoint is not available
+		 */
+		uuid = argv[2];
+		codec_id = strtol(argv[3], NULL, 0);
+		cap = find_capabilities(uuid, codec_id);
+		if (cap) {
+			broadcast = true;
+			cfg->ep = endpoint_new(cap);
+			cfg->ep->preset = find_presets_name(uuid, argv[3]);
+			if (!cfg->ep->preset)
+				bt_shell_printf("Preset not found\n");
+		} else {
+			bt_shell_printf("Local Endpoint %s,"
+				"or capabilities not found\n", uuid);
+			goto fail;
+		}
 	}
 
-	if (argc > 3) {
-		preset = preset_find_name(cfg->ep->preset, argv[3]);
+	if (((broadcast == false) && (argc > 3)) ||
+		((broadcast == true) && (argc > 4))) {
+		char *preset_name = (broadcast == false)?argv[3]:argv[4];
+
+		preset = preset_find_name(cfg->ep->preset, preset_name);
 		if (!preset) {
-			bt_shell_printf("Preset %s not found\n", argv[3]);
+			bt_shell_printf("Preset %s not found\n", preset_name);
 			goto fail;
 		}
 
@@ -3334,7 +3374,8 @@ static const struct bt_shell_menu endpoint_menu = {
 	{ "unregister",   "<UUID/object>", cmd_unregister_endpoint,
 						"Register Endpoint",
 						local_endpoint_generator },
-	{ "config",       "<endpoint> <local endpoint> [preset]",
+	{ "config",
+		"<endpoint> [local endpoint/UUID] [preset/codec id] [preset]",
 						cmd_config_endpoint,
 						"Configure Endpoint",
 						endpoint_generator },
@@ -3351,7 +3392,8 @@ static struct endpoint *endpoint_new(const struct capabilities *cap)
 
 	ep = new0(struct endpoint, 1);
 	ep->uuid = g_strdup(cap->uuid);
-	ep->broadcast = strcmp(cap->uuid, BAA_SERVICE_UUID) ? false : true;
+	ep->broadcast = (strcmp(cap->uuid, BCAA_SERVICE_UUID) &&
+			strcmp(cap->uuid, BAA_SERVICE_UUID)) ? false : true;
 	ep->codec = cap->codec_id;
 	ep->path = g_strdup_printf("%s/ep%u", BLUEZ_MEDIA_ENDPOINT_PATH,
 					g_list_length(local_endpoints));

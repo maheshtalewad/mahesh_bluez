@@ -82,7 +82,7 @@ pkginclude_HEADERS += $(lib_headers)
 lib_LTLIBRARIES += lib/libbluetooth.la
 
 lib_libbluetooth_la_SOURCES = $(lib_headers) $(lib_sources)
-lib_libbluetooth_la_LDFLAGS = $(AM_LDFLAGS) -version-info 22:9:19
+lib_libbluetooth_la_LDFLAGS = $(AM_LDFLAGS) -version-info 22:10:19
 lib_libbluetooth_la_DEPENDENCIES = $(local_headers)
 endif
 
@@ -391,7 +391,7 @@ EXTRA_DIST += $(test_scripts)
 
 EXTRA_DIST += doc/assigned-numbers.txt doc/supported-features.txt \
 				doc/test-coverage.txt \
-				doc/test-runner.txt \
+				doc/test-runner.rst \
 				doc/settings-storage.txt
 
 EXTRA_DIST += doc/mgmt-api.txt \
