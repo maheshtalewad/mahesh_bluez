@@ -57,3 +57,7 @@ unsigned int bt_vcp_register(bt_vcp_func_t added, bt_vcp_func_t removed,
 							void *user_data);
 bool bt_vcp_unregister(unsigned int id);
 struct bt_vcp *bt_vcp_new(struct gatt_db *ldb, struct gatt_db *rdb);
+
+void pts_aics_write_mute_value(uint16_t value); /* AICS PTS */
+void pts_aics_write_gain_mode_val(uint16_t value); /* AICS PTS */
+void pts_aics_conf_auto_gain_mode_field(uint16_t value); /* AICS PTS */

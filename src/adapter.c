@@ -67,6 +67,9 @@
 #include "adv_monitor.h"
 #include "eir.h"
 #include "battery.h"
+/* AICS Start */
+#include "src/shared/vcp.h"
+/* AICS End */
 
 #define MODE_OFF		0x00
 #define MODE_CONNECTABLE	0x01
@@ -3905,6 +3908,65 @@ static const GDBusMethodTable adapter_methods[] = {
 	{ }
 };
 
+/* AICS PTS Start */
+static void property_aics_write_mute(const GDBusPropertyTable *propert,
+				DBusMessageIter *iter,
+				GDBusPendingPropertySet id, void *user_data)
+{
+	uint16_t mute_val;
+
+	if (dbus_message_iter_get_arg_type(iter) != DBUS_TYPE_UINT16) {
+		g_dbus_pending_property_error(id,
+				ERROR_INTERFACE ".InvalidArguments",
+				"Expected UINT16");
+		return;
+	}
+	dbus_message_iter_get_basic(iter, &mute_val);
+	DBG("%s : %x\n", __func__, mute_val);
+
+	pts_aics_write_mute_value(mute_val);
+	g_dbus_pending_property_success(id);
+}
+
+static void property_aics_write_gain_mode(const GDBusPropertyTable *propert,
+				DBusMessageIter *iter,
+				GDBusPendingPropertySet id, void *user_data)
+{
+	uint16_t gain_mode_val;
+
+	if (dbus_message_iter_get_arg_type(iter) != DBUS_TYPE_UINT16) {
+		g_dbus_pending_property_error(id,
+				ERROR_INTERFACE ".InvalidArguments",
+				"Expected UINT16");
+		return;
+	}
+	dbus_message_iter_get_basic(iter, &gain_mode_val);
+	DBG("%s : %x\n", __func__, gain_mode_val);
+
+	pts_aics_write_gain_mode_val(gain_mode_val);
+	g_dbus_pending_property_success(id);
+}
+
+static void property_aics_conf_gain_mode(const GDBusPropertyTable *propert,
+				DBusMessageIter *iter,
+				GDBusPendingPropertySet id, void *user_data)
+{
+	uint16_t gain_mode_val;
+
+	if (dbus_message_iter_get_arg_type(iter) != DBUS_TYPE_UINT16) {
+		g_dbus_pending_property_error(id,
+				ERROR_INTERFACE ".InvalidArguments",
+				"Expected UINT16");
+		return;
+	}
+	dbus_message_iter_get_basic(iter, &gain_mode_val);
+	DBG("%s : %x\n", __func__, gain_mode_val);
+
+	pts_aics_conf_auto_gain_mode_field(gain_mode_val);
+	g_dbus_pending_property_success(id);
+}
+/* AICS PTS End */
+
 static const GDBusPropertyTable adapter_properties[] = {
 	{ "Address", "s", property_get_address },
 	{ "AddressType", "s", property_get_address_type },
@@ -3930,6 +3992,11 @@ static const GDBusPropertyTable adapter_properties[] = {
 					property_experimental_exists },
 	{ "Manufacturer", "q", property_get_manufacturer },
 	{ "Version", "y", property_get_version },
+/* AICS PTS Start */
+	{ "aics_write_mute_val", "q", NULL, property_aics_write_mute },
+	{ "aics_write_gain_mode_val", "q", NULL, property_aics_write_gain_mode },
+	{ "aics_conf_gainmode", "q", NULL, property_aics_conf_gain_mode },
+/* AICS PTS End */
 	{ }
 };
 

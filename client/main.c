@@ -414,6 +414,8 @@ static struct adapter *adapter_new(GDBusProxy *proxy)
 	if (!default_ctrl)
 		default_ctrl = adapter;
 
+	aics_set_proxy((void *)adapter);   /* AICS PTS */
+
 	return adapter;
 }
 
@@ -893,6 +895,8 @@ static void cmd_show(int argc, char *argv[])
 		}
 	}
 
+	aics_set_proxy((void *)adapter); /* AICS PTS */
+
 	if (!g_dbus_proxy_get_property(adapter->proxy, "Address", &iter))
 		return bt_shell_noninteractive_quit(EXIT_FAILURE);
 
@@ -957,6 +961,7 @@ static void cmd_select(int argc, char *argv[])
 	if (default_ctrl && default_ctrl->proxy == adapter->proxy)
 		return bt_shell_noninteractive_quit(EXIT_SUCCESS);
 
+	aics_set_proxy((void *)adapter); /* AICS PTS */
 	default_ctrl = adapter;
 	print_adapter(adapter->proxy, NULL);
 

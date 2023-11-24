@@ -10,3 +10,8 @@
 
 void player_add_submenu(void);
 void player_remove_submenu(void);
+
+/* AICS PTS start */
+void aics_set_proxy(void *proxy);
+/* AICS PTS end */
+

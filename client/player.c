@@ -608,6 +608,80 @@ static void cmd_show_item(int argc, char *argv[])
 	return bt_shell_noninteractive_quit(EXIT_SUCCESS);
 }
 
+/* AICS PTS Start */
+struct aics_adapter {
+	GDBusProxy *proxy;
+};
+static struct aics_adapter *aics_default_ctrl;
+
+void aics_set_proxy(void *proxy)
+{
+	aics_default_ctrl = (struct aics_adapter *)proxy;
+	if (aics_default_ctrl == NULL) {
+		bt_shell_printf("aics_default_ctrl is NULL\n");
+		return;
+	}
+}
+
+static void cmd_change_aics_mute_value(int argc, char *argv[])
+{
+	char *endptr = NULL;
+	int mute_val;
+
+	mute_val = strtol(argv[1], &endptr, 0);
+	if (!endptr || *endptr != '\0' || mute_val > UINT16_MAX) {
+		bt_shell_printf("Invalid argument: %s\n", argv[1]);
+		return bt_shell_noninteractive_quit(EXIT_FAILURE);
+	}
+	bt_shell_printf("%s : %x\n", __func__, mute_val);
+	if (g_dbus_proxy_set_property_basic(aics_default_ctrl->proxy,
+				"aics_write_mute_val", DBUS_TYPE_UINT16, &mute_val,
+				generic_callback, NULL, NULL) == TRUE)
+		return;
+
+	return bt_shell_noninteractive_quit(EXIT_FAILURE);
+}
+
+static void cmd_change_aics_gain_mode_value(int argc, char *argv[])
+{
+	char *endptr = NULL;
+	int gain_mode_val;
+
+	gain_mode_val = strtol(argv[1], &endptr, 0);
+	if (!endptr || *endptr != '\0' || gain_mode_val > UINT16_MAX) {
+		bt_shell_printf("Invalid argument: %s\n", argv[1]);
+		return bt_shell_noninteractive_quit(EXIT_FAILURE);
+	}
+	bt_shell_printf("%s : %x\n", __func__, gain_mode_val);
+	if (g_dbus_proxy_set_property_basic(aics_default_ctrl->proxy,
+				"aics_write_gain_mode_val", DBUS_TYPE_UINT16, &gain_mode_val,
+				generic_callback, NULL, NULL) == TRUE)
+		return;
+
+	return bt_shell_noninteractive_quit(EXIT_FAILURE);
+}
+
+static void cmd_conf_aics_gain_mode_only_value(int argc, char *argv[])
+{
+	char *endptr = NULL;
+	int gain_mode_val;
+
+	gain_mode_val = strtol(argv[1], &endptr, 0);
+	if (!endptr || *endptr != '\0' || gain_mode_val > UINT16_MAX) {
+		bt_shell_printf("Invalid argument: %s\n", argv[1]);
+		return bt_shell_noninteractive_quit(EXIT_FAILURE);
+	}
+	bt_shell_printf("%s : %x\n", __func__, gain_mode_val);
+	if (g_dbus_proxy_set_property_basic(aics_default_ctrl->proxy,
+				"aics_conf_gainmode", DBUS_TYPE_UINT16, &gain_mode_val,
+				generic_callback, NULL, NULL) == TRUE)
+		return;
+
+	return bt_shell_noninteractive_quit(EXIT_FAILURE);
+}
+
+/* AICS PTS End*/
+
 static void cmd_show(int argc, char *argv[])
 {
 	GDBusProxy *proxy;
@@ -981,6 +1055,21 @@ static const struct bt_shell_menu player_menu = {
 							item_generator},
 	{ "show-item",   "<item>",    cmd_show_item, "Show item information",
 							item_generator},
+	/* AICS PTS start */
+	{ "aics_mute",	"<val>", cmd_change_aics_mute_value,
+					"Write AICS Mute Field Value,\n\
+					\t\t0:Not Muted, 1:Muted, 2:Disabled",
+							NULL },
+	{ "aics_set_gainmode",	"<val>", cmd_change_aics_gain_mode_value,
+					"Write AICS Gain Mode Field Value,\n\
+					\t\t0:Manual only 1:Automatic Only,\n\
+					\t\t2:Manual 3:Automatic",
+							NULL },
+	{ "aics_conf_gainmode",	"<val>", cmd_conf_aics_gain_mode_only_value,
+					"Configure AICS Gain Mode Field Value,\n\
+					\t\t0:Manual only 1:Automatic Only,",
+							NULL },
+	/* AICS PTS end*/
 	{} },
 };
 
