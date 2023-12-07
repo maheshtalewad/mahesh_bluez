@@ -73,7 +73,7 @@
 #define BT_VCP_LEFT_SURROUND        BIT(27)
 #define BT_VCP_RIGHT_SURROUND       BIT(28)
 
-#define VCS_TOTAL_NUMB_HANDLES	11
+#define VCS_TOTAL_NUM_HANDLES	11
 #define AICS_TOTAL_NUM_HANDLES	16
 
 /* AICS Audio Input Type Values */
@@ -108,7 +108,7 @@
 #define AICS_MUTED	0x01
 #define AICS_DISABLED	0x02
 
-#define AICS_GAIN_SETTING_UNITS	0.1
+#define AICS_GAIN_SETTING_UNITS	1
 #define AICS_GAIN_SETTING_MAX_VALUE	127
 #define AICS_GAIN_SETTING_MIN_VALUE	-128
 
@@ -1238,7 +1238,7 @@ static uint8_t aics_unmute(struct bt_aics *aics, struct bt_vcp *vcp,
 
 	vdb = vcp_get_vdb(vcp);
 	if (!vdb) {
-		DBG(vcp, "Error: VDB not available");
+		DBG(vcp, "error: VDB not available");
 		ret = 0;
 		goto respond;
 
@@ -1246,7 +1246,7 @@ static uint8_t aics_unmute(struct bt_aics *aics, struct bt_vcp *vcp,
 
 	audipst = vdb_get_audipst(vdb);
 	if (!audipst) {
-		DBG(vcp, "Error: Audio Input State value is not available");
+		DBG(vcp, "error: Audio Input State value is not available");
 		ret = 0;
 		goto respond;
 
@@ -1369,7 +1369,7 @@ static uint8_t aics_set_manual_gain_mode(struct bt_aics *aics,
 
 	if (audipst->gain_mode == AICS_GAIN_MODE_AUTO_ONLY ||
 		audipst->gain_mode == AICS_GAIN_MODE_MANUAL_ONLY) {
-		DBG(vcp, "Error!! gain mode is Automatic only or Manual only");
+		DBG(vcp, "error!! gain mode is Automatic only or Manual only");
 		ret = BT_ATT_AICS_ERROR_GAIN_MODE_CHANGE_NOT_ALLOWED;
 		goto respond;
 	}
@@ -1385,7 +1385,7 @@ static uint8_t aics_set_manual_gain_mode(struct bt_aics *aics,
 		ret = 0;
 	} else {
 		DBG(vcp,
-		"Error!! Gain mode field val not Automatic");
+		"error!! Gain mode field value not Automatic");
 		ret = BT_ATT_AICS_ERROR_GAIN_MODE_CHANGE_NOT_ALLOWED;
 	}
 
@@ -1428,7 +1428,7 @@ static uint8_t aics_set_auto_gain_mode(struct bt_aics *aics, struct bt_vcp *vcp,
 
 	if (audipst->gain_mode == AICS_GAIN_MODE_AUTO_ONLY ||
 		audipst->gain_mode == AICS_GAIN_MODE_MANUAL_ONLY) {
-		DBG(vcp, "Error!! gain mode is Automatic only or Manual only");
+		DBG(vcp, "error!! gain mode is Automatic only or Manual only");
 		ret = BT_ATT_AICS_ERROR_GAIN_MODE_CHANGE_NOT_ALLOWED;
 		goto respond;
 	}
@@ -1442,7 +1442,7 @@ static uint8_t aics_set_auto_gain_mode(struct bt_aics *aics, struct bt_vcp *vcp,
 				sizeof(struct aud_ip_st), bt_vcp_get_att(vcp));
 		ret = 0;
 	} else {
-		DBG(vcp, "Error!! Gain mode field value is not Manual");
+		DBG(vcp, "error!! Gain mode field value is not Manual");
 		ret = BT_ATT_AICS_ERROR_GAIN_MODE_CHANGE_NOT_ALLOWED;
 	}
 
@@ -1560,7 +1560,7 @@ static void aics_input_descr_write(struct gatt_db_attribute *attrib,
 				uint8_t opcode, struct bt_att *att,
 				void *user_data)
 {
-	/* AICS optional feature */
+	/* TODO : AICS optional feature */
 }
 
 static struct bt_vcs *vcs_new(struct gatt_db *db, struct bt_vcp_db *vdb)
@@ -1582,7 +1582,7 @@ static struct bt_vcs *vcs_new(struct gatt_db *db, struct bt_vcp_db *vdb)
 	/* Populate DB with VCS attributes */
 	bt_uuid16_create(&uuid, VCS_UUID);
 	vcs->service = gatt_db_add_service(db, &uuid, true,
-						VCS_TOTAL_NUMB_HANDLES);
+						VCS_TOTAL_NUM_HANDLES);
 	gatt_db_service_add_included(vcs->service, vdb->vocs->service);
 	gatt_db_service_set_active(vdb->vocs->service, true);
 	gatt_db_service_add_included(vcs->service, vdb->aics->service);
@@ -1810,10 +1810,12 @@ static struct bt_vcp_db *vcp_db_new(struct gatt_db *db)
 	if (!vcp_db)
 		vcp_db = queue_new();
 
-	vdb->aics = aics_new(db);
-	vdb->aics->vdb = vdb;
 	vdb->vocs = vocs_new(db);
 	vdb->vocs->vdb = vdb;
+
+	vdb->aics = aics_new(db);
+	vdb->aics->vdb = vdb;
+
 	vdb->vcs = vcs_new(db, vdb);
 	vdb->vcs->vdb = vdb;
 
@@ -2421,13 +2423,13 @@ static void read_aics_gain_setting_prop(struct bt_vcp *vcp, bool success,
 	};
 
 	if (!value) {
-		DBG(vcp, "Unable to get AICS Gain Setting Properties Char");
+		DBG(vcp, "Unable to get Gain Setting Properties Char");
 		return;
 	}
 
 	if (!success) {
 		DBG(vcp,
-		"Unable to read Gain Setting Prop Char: 0x%02x",
+		"Unable to read Gain Setting Properties Char: 0x%02x",
 		att_ecode);
 		return;
 	}
@@ -2435,7 +2437,7 @@ static void read_aics_gain_setting_prop(struct bt_vcp *vcp, bool success,
 	aics_gain_setting_prop = iov_pull_mem(&iov,
 				sizeof(*aics_gain_setting_prop));
 	if (!aics_gain_setting_prop) {
-		DBG(vcp, "Unable to get AICS Gain Setting Properties Char");
+		DBG(vcp, "Unable to get Gain Setting Properties Char");
 		return;
 	}
 
@@ -2456,14 +2458,14 @@ static void read_aics_aud_ip_type(struct bt_vcp *vcp, bool success,
 
 	if (!success) {
 		DBG(vcp,
-		"Unable to read Audio Ip Type Char: error 0x%02x",
+		"Unable to read Audio Input Type Char: error 0x%02x",
 		att_ecode);
 		return;
 	}
 
 	memcpy(&ip_type, value, length);
 
-	DBG(vcp, "AICS Audio Input Type : %x", ip_type);
+	DBG(vcp, "Audio Input Type : %x", ip_type);
 }
 
 static void read_aics_audio_ip_status(struct bt_vcp *vcp, bool success,
@@ -2475,13 +2477,13 @@ static void read_aics_audio_ip_status(struct bt_vcp *vcp, bool success,
 
 	if (!success) {
 		DBG(vcp,
-		"Unable to read Audio Ip Status Char: 0x%02x", att_ecode);
+		"Unable to read Audio Input Status Char: 0x%02x", att_ecode);
 		return;
 	}
 
 	memcpy(&ip_status, value, length);
 
-	DBG(vcp, "AICS Audio Input Status : %x", ip_status);
+	DBG(vcp, "Audio Input Status : %x", ip_status);
 }
 
 static void aics_ip_status_notify(struct bt_vcp *vcp, uint16_t value_handle,
@@ -2505,13 +2507,13 @@ static void read_aics_audio_ip_description(struct bt_vcp *vcp, bool success,
 	char *ip_descrptn;
 
 	if (!value) {
-		DBG(vcp, "Unable to get AICS Audio Input Description");
+		DBG(vcp, "Unable to get Audio Input Description");
 		return;
 	}
 
 	if (!success) {
 		DBG(vcp,
-			"Unable to read Audio Ip Descrn char: error 0x%02x",
+			"Unable to read Audio Input Description Char: error 0x%02x",
 			att_ecode);
 		return;
 	}
@@ -2521,11 +2523,11 @@ static void read_aics_audio_ip_description(struct bt_vcp *vcp, bool success,
 	memcpy(ip_descrptn, value, length);
 
 	if (!ip_descrptn) {
-		DBG(vcp, "Unable to get AICS Audio Input Description");
+		DBG(vcp, "Unable to get Audio Input Description");
 		return;
 	}
 
-	DBG(vcp, "AICS Audio Input Description: %s", ip_descrptn);
+	DBG(vcp, "Audio Input Description: %s", ip_descrptn);
 	free(ip_descrptn);
 	ip_descrptn = NULL;
 }
@@ -2568,7 +2570,7 @@ static void foreach_aics_char(struct gatt_db_attribute *attr, void *user_data)
 
 	if (!bt_uuid_cmp(&uuid, &uuid_ipstate)) {
 		DBG(vcp,
-			"Audio Ip State Char found: handle 0x%04x",
+			"AICS Audio Input State Char found: handle 0x%04x",
 			value_handle);
 
 		aics = vcp_get_aics(vcp);
@@ -2588,7 +2590,7 @@ static void foreach_aics_char(struct gatt_db_attribute *attr, void *user_data)
 
 	if (!bt_uuid_cmp(&uuid, &uuid_gain_setting_prop)) {
 		DBG(vcp,
-			"Gain Setting Props Char found: handle 0x%04x",
+			"AICS Gain Setting Properties Char found: handle 0x%04x",
 			value_handle);
 
 		aics = vcp_get_aics(vcp);
@@ -2619,7 +2621,7 @@ static void foreach_aics_char(struct gatt_db_attribute *attr, void *user_data)
 
 	if (!bt_uuid_cmp(&uuid, &uuid_ip_status)) {
 		DBG(vcp,
-			"Audio Ip Status Char found: handle 0x%04x",
+			"AICS Audio Input Status Char found: handle 0x%04x",
 			value_handle);
 
 		aics = vcp_get_aics(vcp);
@@ -2651,7 +2653,7 @@ static void foreach_aics_char(struct gatt_db_attribute *attr, void *user_data)
 
 	if (!bt_uuid_cmp(&uuid, &uuid_ip_decs)) {
 		DBG(vcp,
-			"Audio Ip Descrpn Char found: handle 0x%04x",
+			"AICS Audio Input Description Char found: handle 0x%04x",
 			value_handle);
 
 		aics = vcp_get_aics(vcp);
